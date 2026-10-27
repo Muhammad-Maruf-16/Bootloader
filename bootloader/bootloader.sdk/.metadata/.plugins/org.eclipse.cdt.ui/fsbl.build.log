@@ -1,0 +1,16 @@
+09:46:09 **** Incremental Build of configuration Debug for project fsbl ****
+make pre-build main-build 
+a9-linaro-pre-build-step
+ 
+Building file: ../src/fsbl_hooks.c
+Invoking: ARM v7 gcc compiler
+arm-none-eabi-gcc -Wall -O0 -g3 -I"/home/maruf/fpga_ebaz4205/Bootloader/bootloader/bootloader.sdk/design_1_wrapper_hw_platform_0" -c -fmessage-length=0 -MT"src/fsbl_hooks.o" -mcpu=cortex-a9 -mfpu=vfpv3 -mfloat-abi=hard -I../../fsbl_bsp/ps7_cortexa9_0/include -MMD -MP -MF"src/fsbl_hooks.d" -MT"src/fsbl_hooks.o" -o "src/fsbl_hooks.o" "../src/fsbl_hooks.c"
+In file included from ../src/fsbl.h:325,
+                 from ../src/fsbl_hooks.c:50:
+../src/fsbl_debug.h:48: error: unterminated #ifndef
+ #ifndef _FSBL_DEBUG_H
+ 
+make: *** [src/subdir.mk:70: src/fsbl_hooks.o] Error 1
+
+09:46:10 Build Finished (took 328ms)
+

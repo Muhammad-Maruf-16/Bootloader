@@ -1,0 +1,6 @@
+09:06:48 INFO  : Registering command handlers for SDK TCF services
+09:06:49 INFO  : Launching XSCT server: xsct -n -interactive /home/maruf/fpga_ebaz4205/Bootloader/bootloader/bootloader.sdk/temp_xsdb_launch_script.tcl
+09:06:52 INFO  : XSCT server has started successfully.
+09:06:53 INFO  : Successfully done setting XSCT server connection channel  
+09:06:53 INFO  : Successfully done setting SDK workspace  
+09:06:53 INFO  : Processing command line option -hwspec /home/maruf/fpga_ebaz4205/Bootloader/bootloader/bootloader.sdk/design_1_wrapper.hdf.
