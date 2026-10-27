@@ -200,19 +200,22 @@ Cari fungsi **`LoadBootImage()`** pada baris ~220:
 Secara default, FSBL mematikan semua output teks serial untuk menghemat ruang memori. Agar status bootloader terlihat di layar serial monitor (Putty / Minicom / Serial Terminal 115200 baud):
 
 Buka file **`fsblnya/src/fsbl_debug.h`**:
-Tambahkan define `FSBL_DEBUG_INFO` pada baris ~55:
+Cari baris ~57 (`#define DEBUG_INFO 0x00000002`), lalu cukup sisipkan satu baris `#define FSBL_DEBUG_INFO 1` tepat di bawahnya:
 
 ```c
 #define DEBUG_GENERAL   0x00000001    /* general debug messages */
 #define DEBUG_INFO      0x00000002    /* More debug information */
 
-/* Tambahkan baris ini: */
-#ifndef FSBL_DEBUG_INFO
-#define FSBL_DEBUG_INFO
-#endif
+/* CUKUP SISIPKAN SATU BARIS INI: */
+#define FSBL_DEBUG_INFO 1
 
 #if defined (FSBL_DEBUG_INFO)
 #define fsbl_dbg_current_types ((DEBUG_INFO) | (DEBUG_GENERAL))
+#elif defined (FSBL_DEBUG)
+#define fsbl_dbg_current_types (DEBUG_GENERAL)
+#else
+#define fsbl_dbg_current_types 0
+#endif
 ```
 
 ---
@@ -280,7 +283,7 @@ Cari blok `NAND BOOT MODE` pada baris ~410:
 
 ---
 
-## Langkah 8: Build Project & Membuat File `BOOT.bin`
+## Langkah 8: Build Project & Membuat Boot Image (PENTING: Ada 2 File Berbeda!)
 
 ### 1. Build Project FSBL:
 * Di Xilinx SDK, klik kanan pada nama project `fsblnya` $\rightarrow$ klik **Clean Project**, lalu **Build Project**.
@@ -289,21 +292,42 @@ Cari blok `NAND BOOT MODE` pada baris ~410:
   Finished building target: fsblnya.elf
   ```
 
-### 2. Membuat File `BOOT.bin` Menggunakan GUI SDK:
-1. Klik kanan pada project aplikasi Anda (misal `LED_CODE` atau `fsblnya`) $\rightarrow$ pilih **Create Boot Image**.
+File `fsblnya.elf` ini akan kita gunakan untuk membuat **2 file biner berbeda**:
+
+---
+
+### Bagian A: Membuat File Biner untuk NAND FLASH (`BOOT_NAND.bin`)
+File ini yang akan **dibakar ke chip NAND Flash board** menggunakan menu *Program Flash* di Xilinx SDK.
+
+1. Klik kanan pada project `fsblnya` $\rightarrow$ pilih **Create Boot Image**.
 2. Di jendela yang muncul:
    * **Output format:** `BIN`.
-   * **Output path:** Tentukan lokasi penyimpanan file `BOOT.bin`.
-3. Pada tabel **Boot image partitions**, susun partisi dengan urutan mutlak berikut:
-   * **Partisi 1:** Klik *Add* $\rightarrow$ Pilih file biner `fsblnya.elf` $\rightarrow$ Partition type: **`bootloader`**.
-   * **Partisi 2:** Klik *Add* $\rightarrow$ Pilih file bitstream FPGA Anda (`.bit`) $\rightarrow$ Partition type: **`datafile`**.
-   * **Partisi 3:** Klik *Add* $\rightarrow$ Pilih file aplikasi C Anda (`.elf`) $\rightarrow$ Partition type: **`datafile`**.
-4. Klik **Create Image**. File `BOOT.bin` yang siap dipakai akan terbentuk.
+   * **Output path:** Simpan dengan nama `BOOT_NAND.bin`.
+3. Pada tabel **Boot image partitions**, **HANYA MASUKKAN 1 FILE SAJA**:
+   * File: `fsblnya.elf` $\rightarrow$ Partition type: **`bootloader`**
+   *(PERHATIAN: JANGAN masukkan bitstream atau aplikasi di sini! NAND hanya butuh FSBL sebagai kunci pembuka / chainloader. Ukurannya hanya ~134 KB).*
+4. Klik **Create Image**.
+5. **Bakar ke Board:** Di menu atas Xilinx SDK, klik **Xilinx $\rightarrow$ Program Flash**:
+   * Image File: pilih `BOOT_NAND.bin`
+   * FSBL File: pilih `fsblnya.elf`
+   * Flash Type: pilih `NAND`
+   * Klik **Program**.
 
-### 3. Khusus untuk `BOOT_NAND.bin` (Hanya FSBL Saja):
-Jika membuat image untuk dibakar ke NAND Flash (Chainloader):
-* Pada tabel partisi **hanya masukkan 1 file saja**: yaitu `fsbl_chainloader.elf` dengan tipe `bootloader`.
-* Simpan sebagai `BOOT_NAND.bin` (ukurannya hanya ~134 KB).
+---
+
+### Bagian B: Membuat File `BOOT.BIN` untuk KARTU MICROSD
+File ini yang akan **dicopy-paste ke dalam kartu MicroSD** (format FAT32) dan dicolokkan ke slot TF U7 EBAZ4205.
+
+1. Klik kanan pada project aplikasi Anda atau `fsblnya` $\rightarrow$ pilih **Create Boot Image**.
+2. Di jendela yang muncul:
+   * **Output format:** `BIN`.
+   * **Output path:** Simpan dengan nama `BOOT.BIN`.
+3. Pada tabel **Boot image partitions**, susun **3 partisi lengkap berurutan**:
+   1. **Partisi 1:** `fsblnya.elf` $\rightarrow$ Partition type: **`bootloader`** *(Gunakan file FSBL yang sama persis)*
+   2. **Partisi 2:** `bitstream.bit` $\rightarrow$ Partition type: **`datafile`** *(File konfigurasi gerbang FPGA dari Vivado)*
+   3. **Partisi 3:** `aplikasi.elf` $\rightarrow$ Partition type: **`datafile`** *(Program C ARM Anda, misal: hello_world.elf, test LED, atau u-boot.elf)*
+4. Klik **Create Image**.
+5. Copy file `BOOT.BIN` tersebut ke dalam kartu MicroSD Anda.
 
 ---
 
