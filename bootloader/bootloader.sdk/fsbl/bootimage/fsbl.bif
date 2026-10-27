@@ -1,0 +1,5 @@
+//arch = zynq; split = false; format = BIN
+the_ROM_image:
+{
+	[bootloader]/home/maruf/fpga_ebaz4205/Bootloader/bootloader/bootloader.sdk/fsbl/Debug/fsbl.elf
+}

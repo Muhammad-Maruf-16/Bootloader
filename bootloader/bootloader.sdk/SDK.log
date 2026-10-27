@@ -4,3 +4,6 @@
 09:06:53 INFO  : Successfully done setting XSCT server connection channel  
 09:06:53 INFO  : Successfully done setting SDK workspace  
 09:06:53 INFO  : Processing command line option -hwspec /home/maruf/fpga_ebaz4205/Bootloader/bootloader/bootloader.sdk/design_1_wrapper.hdf.
+10:12:37 INFO  : Invoking Bootgen: bootgen -image fsbl.bif -arch zynq -o /home/maruf/fpga_ebaz4205/Bootloader/bootloader/bootloader.sdk/fsbl/bootimage/BOOT_NAND.bin
+10:12:37 INFO  : Creating new bif file /home/maruf/fpga_ebaz4205/Bootloader/bootloader/bootloader.sdk/fsbl/bootimage/fsbl.bif
+10:12:38 INFO  : Bootgen command execution is done.

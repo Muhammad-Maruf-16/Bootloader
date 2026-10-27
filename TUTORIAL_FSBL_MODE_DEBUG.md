@@ -165,7 +165,7 @@ Buka file **`fsbl_debug/src/main.c`**, cari bagian `NAND BOOT MODE` (baris ~410)
 
 ---
 
-## Langkah 8: Build ELF & Pembuatan Boot Image (PENTING: Ada 2 File Berbeda!)
+## Langkah 8: Build ELF & Pembuatan Boot Image (Ada 2 File Berbeda!)
 
 Setelah kode selesai diedit, lakukan build project:
 1. Klik kanan project `fsbl_debug` $\rightarrow$ **Clean Project** $\rightarrow$ **Build Project**.
@@ -182,9 +182,8 @@ File ini yang akan **dibakar ke chip NAND Flash board** menggunakan menu *Progra
 2. Tentukan nama output: `BOOT_NAND.bin`.
 3. Pada tabel partisi, **HANYA MASUKKAN 1 FILE SAJA**:
    * File: `fsbl_debug.elf` $\rightarrow$ Type: **`bootloader`**
-   *(PERHATIAN: JANGAN tambahkan bitstream atau aplikasi di sini! NAND hanya butuh FSBL sebagai kunci starter).*
-4. Klik **Create Image**.
-5. **Bakar ke Board:** Di menu atas Xilinx SDK, klik **Xilinx $\rightarrow$ Program Flash** $\rightarrow$ Pilih file `BOOT_NAND.bin` $\rightarrow$ Flash Type: `NAND` $\rightarrow$ Klik **Program**.
+   *(PERHATIAN: JANGAN tambahkan bitstream atau aplikasi di sini! NAND hanya butuh FSBL sebagai kunci starter pembuka).*
+4. Klik **Create Image**. File `BOOT_NAND.bin` siap dibakar.
 
 ---
 
@@ -195,15 +194,69 @@ File ini yang akan **dicopy-paste ke dalam kartu MicroSD** (format FAT32) dan di
 2. Tentukan nama output: `BOOT.BIN`.
 3. Masukkan **3 partisi lengkap berurutan**:
    1. `fsbl_debug.elf` $\rightarrow$ Type: **`bootloader`** *(Gunakan file FSBL yang sama persis)*
-   2. `bitstream.bit` $\rightarrow$ Type: **`datafile`** *(File konfigurasi FPGA)*
-   3. `aplikasi.elf` $\rightarrow$ Type: **`datafile`** *(Program C ARM Anda, misal: hello_world.elf atau LED blink)*
-4. Klik **Create Image**.
-5. Copy file `BOOT.BIN` tersebut ke kartu MicroSD Anda.
+   2. `bitstream.bit` $\rightarrow$ Type: **`datafile`** *(File konfigurasi gerbang FPGA dari Vivado)*
+   3. `aplikasi.elf` $\rightarrow$ Type: **`datafile`** *(Program C ARM Anda, misal: hello_world.elf atau test_led.elf)*
+4. Klik **Create Image**. File `BOOT.BIN` siap dicopy ke kartu SD.
 
 ---
 
-## Langkah 9: Membaca Output Serial Monitor 115200
-Buka Serial Monitor (Arduino IDE / Putty) dengan setting:
+## Langkah 9: Cara Membakar (Flashing) ke Board EBAZ4205
+
+### 1. Cara Flashing ke NAND Flash (Chip Internal Board)
+Pastikan kabel JTAG sudah terhubung ke PC dan board sudah menyala.
+
+**A. Lewat GUI Xilinx SDK (Paling Mudah):**
+1. Di menu atas SDK, klik **Xilinx $\rightarrow$ Program Flash** (atau klik kanan project $\rightarrow$ *Program Flash Memory*).
+2. Isi kolom konfigurasi berikut:
+   * **Hardware Platform:** Pilih hardware platform Anda (`design_1_wrapper_hw_platform_0`).
+   * **Connection:** `Local` (atau JTAG cable yang terdeteksi otomatis).
+   * **Image File:** Browse $\rightarrow$ Pilih file **`BOOT_NAND.bin`** yang tadi dibuat.
+   * **FSBL File:** Browse $\rightarrow$ Pilih file **`fsbl_debug.elf`** Anda. *(Wajib diisi karena Xilinx butuh FSBL pembantu untuk mengaktifkan controller RAM DDR3 & NAND saat proses flashing)*.
+   * **Offset:** Ketik **`0x0`** (wajib mulai dari alamat nol).
+   * **Flash Type:** Pilih **`nand-x8-single`** (atau `NAND 128MB`).
+   * Centang opsi: **Verify after flash**.
+3. Klik tombol **Program**. Tunggu sampai muncul status: `Flash Operation Successful`.
+
+**B. Lewat Terminal Linux (Opsional):**
+```bash
+source /tools/Xilinx/SDK/2019.1/settings64.sh
+program_flash -f /path/ke/BOOT_NAND.bin \
+              -fsbl /path/ke/fsbl_debug.elf \
+              -flash_type nand-x8-single \
+              -blank_check -verify \
+              -cable type xilinx_tcf
+```
+
+---
+
+### 2. Cara "Flashing" / Memasang Aplikasi Utama Anda
+
+Ada 3 cara untuk menjalankan / membakar aplikasi Anda:
+
+* **Metode 1: Lewat MicroSD (Metode Chainloader — Sangat Praktis):**
+  * Tidak perlu kabel JTAG lagi! Cukup colokkan kartu MicroSD ke laptop dengan Card Reader.
+  * Copy-paste file **`BOOT.BIN`** (yang berisi FSBL + Bitstream + Aplikasi) ke dalam MicroSD.
+  * Masukkan kartu ke slot TF U7 EBAZ4205, lalu nyalakan board. Selesai!
+  * *Keunggulan:* Setiap kali Anda mengubah kodingan aplikasi, Anda tidak perlu men-flash ulang chip board, cukup ganti file `BOOT.BIN` di kartu SD.
+
+* **Metode 2: Full Standalone NAND Flash (Jika Ingin Berjalan Tanpa Kartu SD):**
+  * Jika suatu saat Anda ingin board menyala mandiri tanpa kartu SD:
+  * Buat Boot Image baru dengan 3 partisi lengkap:
+    1. `fsbl_debug.elf` (Type: `bootloader`)
+    2. `bitstream.bit` (Type: `datafile`)
+    3. `aplikasi.elf` (Type: `datafile`)
+  * Simpan sebagai `BOOT_NAND_FULL.bin`.
+  * Lalu bakar file tersebut ke NAND Flash menggunakan menu **Program Flash** seperti pada langkah di atas. Board akan menyala dan menjalankan aplikasi langsung dari NAND Flash!
+
+* **Metode 3: Uji Coba Cepat via JTAG RAM (Debug Interaktif):**
+  * Saat masih membuat program C di SDK dan ingin mencoba langsung tanpa copy ke SD atau flash:
+  * Klik kanan project aplikasi $\rightarrow$ **Run As** $\rightarrow$ **Launch on Hardware (System Debugger)**.
+  * Aplikasi akan langsung ter-download ke RAM DDR3 dan dieksekusi secara instan.
+
+---
+
+## Langkah 10: Membaca Output Serial Monitor 115200
+Buka Serial Monitor (Arduino IDE / Putty / Minicom) dengan setting:
 * **Port:** `/dev/ttyUSB0` (atau COM port Windows Anda)
 * **Baudrate:** `115200`
 * **Data bits:** 8, **Parity:** None, **Stop bits:** 1
